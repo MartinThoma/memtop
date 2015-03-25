@@ -49,7 +49,6 @@ _period = 15  # default period
 _format = "graph"
 _log = False
 pid_omem = {}  # dictionary PID:mem
-oldMemUsage = 0  # number
 _firstiteration = True
 _curtime = 0
 _oldtime = 0
@@ -295,6 +294,8 @@ def main():
     global _log, _format, _period, _rows, _firstiteration
     signal.signal(signal.SIGINT, signal_handler)
 
+    oldMemUsage = 0
+
     check_py_version()
 
     args = get_parser().parse_args()
@@ -469,11 +470,12 @@ def main():
         curMemUsage = round(totalMemByPmapKB * 100 / float(totalMem), 1)
 
         if _format == "numb":
-            print("{:>18s}{:>4.1f}{:s}{:5.1f}{:<1s}".format(
-                "Writeable/RAM: ",
-                curMemUsage,
-                "%     (old value: ",
-                oldMemUsage, "%)"))
+            formatting_string = "{:>18s}{:>4.1f}{:s}{:5.1f}{:<1s}"
+            print(formatting_string.format("Writeable/RAM: ",
+                                           curMemUsage,
+                                           "%     (old value: ",
+                                           oldMemUsage,
+                                           "%)"))
         elif _format == "graph":
             onePrc = width / 280.0
             firstLen = int(round(min(curMemUsage, 100) * onePrc))
@@ -525,3 +527,6 @@ def main():
             lfile.close()
 
         sleep(_period * 60 - 2)
+
+if __name__ == '__main__':
+    main()

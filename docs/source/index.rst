@@ -225,13 +225,12 @@ What's next?
 
 Well, I have no ideas. Currently I am only fixing small issues if any
 created in Issues section or if I receive an email. So if you have any
-idea, let me know. You can send an e-mail to
-memtop-info@googlegroups.com mailing list and/or even join it, or
-directly to me.
+idea, let us know. You can send an e-mail to
+info@martin-thoma.de or [add an issue at GitHub](https://github.com/MartinThoma/memtop/issues).
 
-My email: tiborb95 at gmail dot com
+Note from Tibor Bamhor:
 
-*The Memtop is distributed for free and under GPL license. I dont expect
+*The Memtop is distributed for free and under GPLv2 license. I dont expect
 earning big money from this, but if the tool is useful for you, you can
 consider paying a voluntary price for the time I spent developing and
 maintaining it.*
