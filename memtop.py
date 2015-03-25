@@ -10,16 +10,7 @@ encounter performance problems.
 Memtop gets data from /proc/ virtual filesystem.
 """
 
-
-# Tested with python 2.7 and 3.x
-# Contact: tiborb95 at gmail dot com, any comments appreciated
-# version 1.0.1
-# changes since 0.9.0: compatibility with python3, fixed bug causing that
-# * grepping was not possible due to binary (&invisible) characters in output
-# * added "more" information about swapping and memory+swap use
-# * logging to a file added
-#
-# data structures uses:
+# data structures used:
 # key_pid  - dictionary adjusted_mem:PID
 # pid_omem - dictionary PID:Old Memory
 # pid_mem  - dictionary PID:Memory
@@ -28,9 +19,8 @@ Memtop gets data from /proc/ virtual filesystem.
 from os import listdir, getenv, path, sysconf, sysconf_names
 from subprocess import Popen, PIPE
 from time import sleep, strftime, localtime, time
-from getopt import getopt, GetoptError
-from sys import exit, argv, stdout, version_info
-from re import compile
+import sys
+import re
 from string import printable
 from shutil import move
 import signal
@@ -40,7 +30,6 @@ import signal
 _rows = 10  # number of programs to list
 _period = 15  # default period
 _format = "graph"
-_more = False
 _log = False
 pid_omem = {}  # dictionary PID:mem
 oldMemUsage = 0  # number
@@ -60,22 +49,21 @@ _IOwaitprc = 0
 _logfile = "memtop.log"
 
 
-# FUNCTIONS
+def signal_handler(signal_name, frame):
+    """Quit signal handler."""
+    sys.stdout.flush()
+    print("\nSIGINT in frame signal received. Quitting...")
+    sys.stdout.flush()
+    sys.exit(0)
 
-def signal_handler(signal, frame):
-    stdout.flush()
-    print("\nSIGINT signal received. Quitting...")
-    stdout.flush()
-    exit(0)
 
-
-def getCommandOutput(command):
+def get_command_output(command):
     tmp = Popen(command, shell=True, stdout=PIPE)
     output = tmp.communicate()[0]  # .rstrip().rstrip().rstrip()
     return output
 
 
-def formatMemNumb(memory):
+def format_mem_numb(memory):
     # shortening memory to include suffix MB or kB)
     if int(memory) >= 1048576:
         memOutput = str(round(float(memory) / 1048576, 1)) + " MB"
@@ -86,8 +74,8 @@ def formatMemNumb(memory):
     return memOutput
 
 
-def graphFormat(newMem, oldMem):
-    """graphically shows changes in memory consumption"""
+def graph_format(newMem, oldMem):
+    """Show changes graphically in memory consumption"""
     global _firstiteration
 
     if _firstiteration:
@@ -113,12 +101,12 @@ def graphFormat(newMem, oldMem):
     return output
 
 
-def getCurMemUse():
+def get_cur_mem_use():
     """return utilization of memory"""
     # http://lwn.net/Articles/28345/
 
     lines = open("/proc/meminfo", 'r').readlines()
-    emptySpace = compile('[ ]+')
+    emptySpace = re.compile('[ ]+')
     for line in lines:
         if "MemTotal" in line:
             memtotal = float(emptySpace.split(line)[1])
@@ -142,8 +130,8 @@ def getCurMemUse():
     return float(memtotal), strramoccup, strswapoccup
 
 
-def getPrivateMem(pid):
-    sum = 0
+def get_private_mem(pid):
+    sum_private_mem = 0
     for line in open("/proc/" + str(pid) + "/maps", "rb").readlines():
         line = line.decode("ascii")
         if not line[21] == "p":
@@ -153,12 +141,12 @@ def getPrivateMem(pid):
 
         start = int(line[:8], 16)
         end = int(line[9:17], 16)
-        sum = sum + end - start
+        sum_private_mem += end - start
 
-    return sum
+    return sum_private_mem
 
 
-def checkSwapping():
+def check_swapping(verbose=False):
 
     global _firstiteration
     global _curtime
@@ -174,7 +162,6 @@ def checkSwapping():
     global _oldIOwait
     global _IOwaitprc
     global _jiffy
-    global _more
 
     if not path.exists("/proc/vmstat"):
         print("   ERROR: file /proc/vmstat not found....")
@@ -183,7 +170,7 @@ def checkSwapping():
         print("   ERROR: file /proc/stat not found...")
         return
 
-    emptySpace = compile('[ ]+')
+    emptySpace = re.compile('[ ]+')
 
     for line in open("/proc/vmstat").readlines():
         if "pswpin" in line:
@@ -209,10 +196,15 @@ def checkSwapping():
         _pageoutsec = (pgpgout - _oldpgpgout) / timediff
         _IOwaitprc = (IOwait - _oldIOwait) * 100 / \
             _jiffy / (cpucount * timediff)
-        if _more:
-            print("   Swapping: " + str(round(_swapinsec, 1)) + " / " + str(round(_swapoutsec, 1)) +
-                  ", Paging: " + str(round(_pageinsec, 1)) + " / " + str(round(_pageoutsec, 1)) +
-                  " (in/out / sec). CPU I/O wait: " + str(round(_IOwaitprc, 1)) + " %")
+        if verbose:
+            print(("   Swapping: %0.1f / %0.1f, "
+                   "Paging: %0.1f / %0.1f (in/out / sec). "
+                   "CPU I/O wait: %0.1f %") %
+                  (round(_swapinsec, 1),
+                   round(_swapoutsec, 1),
+                   round(_pageinsec, 1),
+                   round(_pageoutsec, 1),
+                   round(_IOwaitprc, 1)))
 
     _oldpswpin = pswpin
     _oldpswpout = pswpout
@@ -223,8 +215,9 @@ def checkSwapping():
 
 
 def check_py_version():
+    """Check if a propper Python version is used."""
     try:
-        if version_info >= (2, 7):
+        if sys.version_info >= (2, 7):
             return
     except:
         pass
@@ -236,7 +229,7 @@ def check_py_version():
     print("(one way to find out which versions are installed is to try "
           "following: 'which python2.7' , 'which python3' and so...)")
     print(" ")
-    exit()
+    sys.exit(-1)
 
 
 def get_parser():
@@ -268,8 +261,8 @@ def get_parser():
                         default=10,
                         type=int,
                         help=("number of processes reported"))
-    parser.add_argument("-m", "--more",
-                        dest="more",
+    parser.add_argument("-v", "--verbose",
+                        dest="verbose",
                         action="store_true",
                         default=False,
                         help=("additional info about memory utilization and "
@@ -283,26 +276,23 @@ def get_parser():
 
 
 def main():
-    global _log, _format, _period, _rows, _more
+    global _log, _format, _period, _rows, _firstiteration
     signal.signal(signal.SIGINT, signal_handler)
-
-    ###################################
-    ######## BODY: INITIALIZATION #####
-    ###################################
 
     check_py_version()
 
     args = get_parser().parse_args()
     _period = args.period
-    _more = args.more
+    verbose = args.verbose
     _log = args.log
     _rows = args.lines
     _format = args.show
 
     # who am I?
-    user = getCommandOutput("whoami || echo failed")
+    user = get_command_output("whoami || echo failed")
     user = user.decode()
-    # following two methods are not reliable
+
+    # the following two methods are not reliable
     if user == "failed":
         try:
             user = getenv('USER').decode()
@@ -317,12 +307,12 @@ def main():
             if path.isfile(_logfile):
                 move(_logfile, _logfile + ".old")
             lfile = open(_logfile, 'a')
-            lfile.write("##Date     time   wrtble ram   swap     pgin   pgout   "
-                        "IOw TopApp:PID wrtbl(KB) command\n")
+            lfile.write("##Date     time   wrtble ram   swap     pgin   "
+                        "pgout   IOw TopApp:PID wrtbl(KB) command\n")
             lfile.close()
         except:
-            print(" \033[0m \033[95m ERROR: Failed to prepare/create the log file "
-                  "in current directory!\033[0m")
+            print(" \033[0m \033[95m ERROR: Failed to prepare/create the "
+                  "log file in current directory!\033[0m")
             _log = False
 
     while True:
@@ -337,15 +327,15 @@ def main():
         processes = 0  # count of identified processes
 
         # first we will identify number of processes
-        for dir in listdir('/proc'):
+        for directory in listdir('/proc'):
             try:  # elimination non-numerical dirs
-                int(dir)  # dir = PID
+                int(directory)  # directory = PID
             except:
                 continue
 
             # calculating private memory in /proc/$PID/maps file
             try:
-                realMem = getPrivateMem(dir)
+                realMem = get_private_mem(directory)
             except:  # process probably doesnt exist anymore
                 continue
 
@@ -354,8 +344,8 @@ def main():
             # creating key, this is basically real memory plus
             # a very small number
             key1 = int(realMem) + margin
-            key_pid[key1] = dir
-            pid_mem[dir] = realMem
+            key_pid[key1] = directory
+            pid_mem[directory] = realMem
             margin = margin + 0.0001
         # now we have all memory data for current iteration
 
@@ -369,12 +359,13 @@ def main():
 
         # finding terminal lenght (doing it every iteration)
         try:
-            width = int(getCommandOutput("stty size | awk '{print $2}'"))
+            width = int(get_command_output("stty size | awk '{print $2}'"))
         except:
             width = 80
         if width < 46:
             print('\033[0m' + '\033[95;1m' + " ! Terminal width " +
-                  str(width) + " not sufficient, 46 is minimum...." + '\033[0m')
+                  str(width) + " not sufficient, 46 is minimum...." +
+                  '\033[0m')
             width = 46
 
         # calculating widht of individual columns
@@ -388,24 +379,26 @@ def main():
         elif _format == "graph":
             a = "change  |"
         curtime = strftime("%d %b %H:%M:%S", localtime())[-col5:]
-        print("\033[0m\033[1m{:>{a}s}{:>{b}s}{:<{c}s}{:>{d}s}".format(
-              "PID |",
-              "private/writ. mem |",
-              "command",
-              curtime,
-              a=col1,
-              b=col2 + col3,
-              c=col4,
-              d=col5))
+        print("\033[0m\033[1m{:>{a}s}{:>{b}s}{:<{c}s}{:>{d}s}".format("PID |",
+                                                                      "private/writ. mem |",
+                                                                      "command",
+                                                                      curtime,
+                                                                      a=col1,
+                                                                      b=col2 + col3,
+                                                                      c=col4,
+                                                                      d=col5))
         wtime = str("(waiting " + str(_period) + " min.)")[-col5:]
         trunc = "(might be truncated)"[:col4]
-        print("{:>{a}s}{:>{b}s}{:>{c}s}{:<{d}s}{:>{e}s}\033[0m".format(
-              "|",
-              "current |",
-              a,
-              trunc,
-              wtime,
-              a=col1, b=col2, c=col3, d=col4, e=col5))
+        print("{:>{a}s}{:>{b}s}{:>{c}s}{:<{d}s}{:>{e}s}\033[0m".format("|",
+                                                                       "current |",
+                                                                       a,
+                                                                       trunc,
+                                                                       wtime,
+                                                                       a=col1,
+                                                                       b=col2,
+                                                                       c=col3,
+                                                                       d=col4,
+                                                                       e=col5))
 
         # printing body (lines with processes)
         printedlines = 0  # just count printed lines
@@ -432,11 +425,11 @@ def main():
             except:
                 oldMem = 0
 
-            curMemStr = formatMemNumb(curMem)
+            curMemStr = format_mem_numb(curMem)
             if _format == "numb":
-                s2 = formatMemNumb(oldMem) + " |"
+                s2 = format_mem_numb(oldMem) + " |"
             elif _format == "graph":
-                s2 = graphFormat(curMem, oldMem) + " |"
+                s2 = graph_format(curMem, oldMem) + " |"
 
             s0 = str(key_pid[item] + " |")
             s1 = str(curMemStr + " |")
@@ -455,7 +448,7 @@ def main():
                 break
 
         # printing footer - info on overall cpu utilization
-        totalMem, ramuse, swapuse = getCurMemUse()
+        totalMem, ramuse, swapuse = get_cur_mem_use()
         totalMemByPmapKB = int(round(totalMemByPmap / 1000, 1))
         curMemUsage = round(totalMemByPmapKB * 100 / float(totalMem), 1)
 
@@ -480,13 +473,13 @@ def main():
         else:
             print((" ! Unexpected data presentation format - internall error, "
                    "quitting..."))
-            exit()
+            sys.exit()
 
-        if _more:
+        if verbose:
             print("   RAM use without cached pages: " +
                   ramuse + "% , SWAP use: " + swapuse + "%")
-        if _more or _log:
-            checkSwapping()
+        if verbose or _log:
+            check_swapping(verbose)
 
         # print warning if user is not root
         if "root" not in user:
@@ -501,7 +494,7 @@ def main():
         _firstiteration = False
 
         # because of problems when piping output. But might be not needed
-        stdout.flush()
+        sys.stdout.flush()
 
         # writing logfile
         if _log:
