@@ -1,0 +1,27 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+memtop is command line utility to help user to find out what applications uses
+biggest portions of the memory (RAM+swap), sorted in decreasing order.
+It lists private/writeable memory only, that is without shared memory.
+Typical use is when you need to reduce the overall RAM consumption or when you
+encounter performance problems.
+
+Memtop gets data from /proc/ virtual filesystem.
+"""
+
+import logging
+import sys
+logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
+                    level=logging.DEBUG,
+                    stream=sys.stdout)
+
+# memtop modules
+# Every HWR tool that should be available through
+#   memtop TOOL
+# has to be added to ``get_parser()`` and to ``main``.
+import memtop
+
+if __name__ == '__main__':
+    memtop.main()

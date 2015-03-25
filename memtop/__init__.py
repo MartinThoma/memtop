@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 
 """
 memtop is command line utility to help user to find out what applications uses
@@ -9,6 +9,23 @@ encounter performance problems.
 
 Memtop gets data from /proc/ virtual filesystem.
 """
+
+from pkg_resources import get_distribution, DistributionNotFound
+import os.path
+
+try:
+    _dist = get_distribution('memtop')
+    # Normalize case for Windows systems
+    dist_loc = os.path.normcase(_dist.location)
+    here = os.path.normcase(__file__)
+    if not here.startswith(os.path.join(dist_loc, 'memtop')):
+        # not installed, but there is another version that *is*
+        raise DistributionNotFound
+except DistributionNotFound:
+    __version__ = 'Please install this project with setup.py'
+else:
+    __version__ = _dist.version
+
 
 # data structures used:
 # key_pid  - dictionary adjusted_mem:PID
@@ -272,6 +289,9 @@ def get_parser():
                         action="store_true",
                         default=False,
                         help=("saves basic data into logfile"))
+    parser.add_argument('--version',
+                        action='version',
+                        version=('memtop %s' % str(__version__)))
     return parser
 
 
@@ -509,6 +529,3 @@ def main():
             lfile.close()
 
         sleep(_period * 60 - 2)
-
-if __name__ == '__main__':
-    main()

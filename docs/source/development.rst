@@ -39,7 +39,7 @@ Code coverage can be tested with
 
 .. code:: bash
 
-    $ nosetests --with-coverage --cover-erase --cover-package hwrt --logging-level=INFO --cover-html
+    $ nosetests --with-coverage --cover-erase --cover-package memtop --logging-level=INFO --cover-html
 
 and uploaded to coveralls.io with
 
