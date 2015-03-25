@@ -1,6 +1,16 @@
 #!/usr/bin/env python
 
-"""Memtop - prints applications that consumes most of RAM"""
+"""
+memtop is command line utility to help user to find out what applications uses
+biggest portions of the memory (RAM+swap), sorted in decreasing order.
+It lists private/writeable memory only, that is without shared memory.
+Typical use is when you need to reduce the overall RAM consumption or when you
+encounter performance problems.
+
+Memtop gets data from /proc/ virtual filesystem.
+"""
+
+
 # Tested with python 2.7 and 3.x
 # Contact: tiborb95 at gmail dot com, any comments appreciated
 # version 1.0.1
@@ -57,7 +67,6 @@ def signal_handler(signal, frame):
     print("\nSIGINT signal received. Quitting...")
     stdout.flush()
     exit(0)
-signal.signal(signal.SIGINT, signal_handler)
 
 
 def getCommandOutput(command):
@@ -78,7 +87,7 @@ def formatMemNumb(memory):
 
 
 def graphFormat(newMem, oldMem):
-    # graphically shows changes in memory consumption
+    """graphically shows changes in memory consumption"""
     global _firstiteration
 
     if _firstiteration:
@@ -105,7 +114,7 @@ def graphFormat(newMem, oldMem):
 
 
 def getCurMemUse():
-    # return utilization of memory
+    """return utilization of memory"""
     # http://lwn.net/Articles/28345/
 
     lines = open("/proc/meminfo", 'r').readlines()
@@ -131,34 +140,6 @@ def getCurMemUse():
     strswapoccup = str(round(swapoccup * 100.0, 1))
 
     return float(memtotal), strramoccup, strswapoccup
-
-
-def usage():
-    print("")
-    print(("   MEMTOP is command line utility (python script)\n"
-           "     to help user to find out \n"
-           "    what applications uses biggest portions of the memory "
-           "(RAM+swap), sorted in decreasing order. \n"
-           "    It lists private/writeable memory only, that is without "
-           "shared memory. \n"
-           "    Typical use is when you need to reduce the overall RAM "
-           "consumption or when you \n"
-           "    encounter performance problems."))
-    print("   Version 1.0")
-    print("   Memtop gets data from /proc/ virtual filesystem.")
-    print("   Home: http://code.google.com/p/memtop/ ")
-    print("")
-    print("   Available switches:")
-    print(" -p/--period=  waittime between iterations in minutes")
-    print((" -s/--show=    either graph or numb, it selects the way \n"
-           "how data mainly for previous period are presented."))
-    print(" -l/--lines=   number of processes reported")
-    print((" -m/--more    additional info about memory utilization and "
-           "swaping/paging"))
-    print(" -L/--log     saves basic data into logfile")
-    print(" -h/--help     ")
-    print("")
-    print("   You can contact me at tiborb95 at gmail dot com" + '\033[0m')
 
 
 def getPrivateMem(pid):
@@ -258,284 +239,283 @@ def check_py_version():
     exit()
 
 
-###################################
-######## BODY: INITIALIZATION #####
-###################################
+def get_parser():
+    from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+    from argparse import ArgumentTypeError
+    parser = ArgumentParser(description=__doc__,
+                            formatter_class=ArgumentDefaultsHelpFormatter)
 
-check_py_version()
+    def positive(value):
+        ivalue = int(value)
+        if ivalue < 0:
+            raise ArgumentTypeError("%s is an invalid positive int value" %
+                                    value)
+        return ivalue
 
-try:
-    opts, args = getopt(argv[1:], "p:s:l:hmL",
-                        ["period=", "show=", "lines=", "help", "more", "log"])
-    for opt, arg in opts:
-        if opt in ("-p", "--period"):
-            try:
-                _period = int(arg)
-                if _period < 1:
-                    _period = 1
-            except:
-                print("WARNING: Using default iteration time: " +
-                      str(_period) + " min")
-        if opt in ("-m", "--more"):
-            _more = True
-        if opt in ("-L", "--log"):
-            _log = True
-        if opt in ("-l", "--lines"):
-            try:
-                _rows = int(arg)
-            except:
-                print("WARNING: Using default number of lines:" + str(_rows))
-        if opt in ("-s", "--show"):
-            try:
-                if arg in ('graph', 'Graph', 'graf', 'graphic'):
-                    _format = "graph"
-                elif arg in ('numb', 'Numb', 'num'):
-                    _format = "numb"
-                else:
-                    _format = "graph"
-                    print ("WARNING: Wrong type of total RAM use \
-presentation, using default")
+    parser.add_argument("-p", "--period",
+                        dest="period",
+                        default=15,
+                        type=positive,
+                        help="waittime between iterations in minutes")
+    parser.add_argument("-s", "--show",
+                        dest="show",
+                        default='graph',
+                        choices=['graph', 'numb'],
+                        help=("it selects the way how data mainly for "
+                              "previous period are presented."))
+    parser.add_argument("-l", "--lines",
+                        dest="lines",
+                        default=10,
+                        type=int,
+                        help=("number of processes reported"))
+    parser.add_argument("-m", "--more",
+                        dest="more",
+                        action="store_true",
+                        default=False,
+                        help=("additional info about memory utilization and "
+                              "swaping/paging"))
+    parser.add_argument("-L", "--log",
+                        dest="log",
+                        action="store_true",
+                        default=False,
+                        help=("saves basic data into logfile"))
+    return parser
 
+
+def main():
+    global _log, _format, _period, _rows, _more
+    signal.signal(signal.SIGINT, signal_handler)
+
+    ###################################
+    ######## BODY: INITIALIZATION #####
+    ###################################
+
+    check_py_version()
+
+    args = get_parser().parse_args()
+    _period = args.period
+    _more = args.more
+    _log = args.log
+    _rows = args.lines
+    _format = args.show
+
+    # who am I?
+    user = getCommandOutput("whoami || echo failed")
+    user = user.decode()
+    # following two methods are not reliable
+    if user == "failed":
+        try:
+            user = getenv('USER').decode()
+        except:
+            pass
+    if user == "failed":
+        print(" ! Failed to find out the current user")
+
+    # preparing logfile
+    if _log:
+        try:  # the destination might not be writeable
+            if path.isfile(_logfile):
+                move(_logfile, _logfile + ".old")
+            lfile = open(_logfile, 'a')
+            lfile.write("##Date     time   wrtble ram   swap     pgin   pgout   "
+                        "IOw TopApp:PID wrtbl(KB) command\n")
+            lfile.close()
+        except:
+            print(" \033[0m \033[95m ERROR: Failed to prepare/create the log file "
+                  "in current directory!\033[0m")
+            _log = False
+
+    while True:
+        memD = {}  # key(~memory):real memory
+        keys = ()  # list of keys (to be listed by size)
+        key_pid = {}  # key(~memory):PID
+        pid_mem = {}  # dictionary of PID to cur memory, redefining to empty it
+        # this is ugly workaround to make sure there are no same numbers
+        margin = 0.0001
+        totalMemByPmap = 0
+        oldMemDtmp = {}      # dictionary of mem. in previous iteration PID:mem
+        processes = 0  # count of identified processes
+
+        # first we will identify number of processes
+        for dir in listdir('/proc'):
+            try:  # elimination non-numerical dirs
+                int(dir)  # dir = PID
             except:
-                print("WARNING: Using default format for old values:" +
-                      str(_format))
-        if opt in ("-h", "--help"):
-            usage()
+                continue
+
+            # calculating private memory in /proc/$PID/maps file
+            try:
+                realMem = getPrivateMem(dir)
+            except:  # process probably doesnt exist anymore
+                continue
+
+            totalMemByPmap = totalMemByPmap + int(realMem)
+
+            # creating key, this is basically real memory plus
+            # a very small number
+            key1 = int(realMem) + margin
+            key_pid[key1] = dir
+            pid_mem[dir] = realMem
+            margin = margin + 0.0001
+        # now we have all memory data for current iteration
+
+        # creating list of keys - sorted
+        keys = key_pid.keys()
+        keys = sorted(keys, reverse=True)
+        processes = len(keys)
+        #print (key_pid)
+
+        ##############  printing ##################
+
+        # finding terminal lenght (doing it every iteration)
+        try:
+            width = int(getCommandOutput("stty size | awk '{print $2}'"))
+        except:
+            width = 80
+        if width < 46:
+            print('\033[0m' + '\033[95;1m' + " ! Terminal width " +
+                  str(width) + " not sufficient, 46 is minimum...." + '\033[0m')
+            width = 46
+
+        # calculating widht of individual columns
+        col1, col2, col3 = 8, 11, 11
+        col4 = int((width - col1 - col2 - col3 - 2) / 2)
+        col5 = width - col1 - col2 - col3 - col4
+
+        # printing header
+        if _format == "numb":
+            a = "previous |"
+        elif _format == "graph":
+            a = "change  |"
+        curtime = strftime("%d %b %H:%M:%S", localtime())[-col5:]
+        print("\033[0m\033[1m{:>{a}s}{:>{b}s}{:<{c}s}{:>{d}s}".format(
+              "PID |",
+              "private/writ. mem |",
+              "command",
+              curtime,
+              a=col1,
+              b=col2 + col3,
+              c=col4,
+              d=col5))
+        wtime = str("(waiting " + str(_period) + " min.)")[-col5:]
+        trunc = "(might be truncated)"[:col4]
+        print("{:>{a}s}{:>{b}s}{:>{c}s}{:<{d}s}{:>{e}s}\033[0m".format(
+              "|",
+              "current |",
+              a,
+              trunc,
+              wtime,
+              a=col1, b=col2, c=col3, d=col4, e=col5))
+
+        # printing body (lines with processes)
+        printedlines = 0  # just count printed lines
+        #print ("processes:" +processes)
+        for item in keys[0:processes]:
+
+            #print ("Doing: "+item)
+            # gettind command and shortening if needed
+            try:
+                pid = key_pid[item]
+                cmdfile = str("/proc/" + str(pid) + "/cmdline")
+                f = open(cmdfile, 'r')
+                command = open(cmdfile, "rt").read().replace(
+                    "\0", " ")[:col4 + col5]
+                f.close()
+            except:
+                continue
+
+            #print (command)
+            # getting formatted value of current memory usage
+            curMem = pid_mem[pid]
+            try:
+                oldMem = pid_omem[pid]
+            except:
+                oldMem = 0
+
+            curMemStr = formatMemNumb(curMem)
+            if _format == "numb":
+                s2 = formatMemNumb(oldMem) + " |"
+            elif _format == "graph":
+                s2 = graphFormat(curMem, oldMem) + " |"
+
+            s0 = str(key_pid[item] + " |")
+            s1 = str(curMemStr + " |")
+            # getting rid of binary characters
+            command = ''.join(s for s in command if s in printable)
+
+            print("{:>{a}s}{:>{b}s}{:>{c}s}{:<{d}s}".format(
+                s0, s1, s2, command, a=col1, b=col2, c=col3, d=col4 + col5))
+
+            if _log and printedlines == 0:
+                outline_comm = " {:>7s} {:>9.0f}  {:20s}".format(
+                    pid, round(curMem / 1024, 0), command)
+
+            printedlines = printedlines + 1
+            if printedlines >= _rows:
+                break
+
+        # printing footer - info on overall cpu utilization
+        totalMem, ramuse, swapuse = getCurMemUse()
+        totalMemByPmapKB = int(round(totalMemByPmap / 1000, 1))
+        curMemUsage = round(totalMemByPmapKB * 100 / float(totalMem), 1)
+
+        if _format == "numb":
+            print("{:>18s}{:>4.1f}{:s}{:5.1f}{:<1s}".format(
+                "Writeable/RAM: ",
+                curMemUsage,
+                "%     (old value: ",
+                oldMemUsage, "%)"))
+        elif _format == "graph":
+            onePrc = width / 280.0
+            firstLen = int(round(min(curMemUsage, 100) * onePrc))
+            if curMemUsage > 100:
+                secondLen = int(round((curMemUsage - 100) * onePrc))
+            else:
+                secondLen = 0
+            # print curMemUsage, onePrc, firstLen , secondLen
+            bar = str('=' * firstLen + str('#' * secondLen))
+            print("{:>18s}{:s}{:>6.1f}{:s}".format(
+                "Writeable/RAM: ", bar, curMemUsage, "%"))
+
+        else:
+            print((" ! Unexpected data presentation format - internall error, "
+                   "quitting..."))
             exit()
 
-except GetoptError:
-    print(" ")
-    print('\033[0m' + '\033[95m' +
-          " ! You entered incorrect switches to the script. Please \n"
-          "read help (will be printed out in a while.)" + '\033[37;32m')
-    sleep(2)
-    usage()
-    sleep(6)
-    print("")
-    print('\033[0m' + '\033[95m' + " ! ! ! Continuing in 15 seconds, but " +
-          "some switches \ncan be ignored altogether..." + '\033[0m')
-    print("")
-    sleep(15)
+        if _more:
+            print("   RAM use without cached pages: " +
+                  ramuse + "% , SWAP use: " + swapuse + "%")
+        if _more or _log:
+            checkSwapping()
 
-# who am I?
-user = getCommandOutput("whoami || echo failed")
-user = user.decode()
-# following two methods are not reliable
-if user == "failed":
-    try:
-        user = getenv('USER').decode()
-    except:
-        pass
-if user == "failed":
-    print(" ! Failed to find out the current user")
+        # print warning if user is not root
+        if "root" not in user:
+            print("")
+            print("     \033[0m \033[95m WARNING: Running without ROOT "
+                  "CREDENTIALS, data might be incomplete...\033[0m")
 
-
-# preparing logfile
-if _log:
-    try:  # the destination might not be writeable
-        if path.isfile(_logfile):
-            move(_logfile, _logfile + ".old")
-        lfile = open(_logfile, 'a')
-        lfile.write("##Date     time   wrtble ram   swap     pgin   pgout   "
-                    "IOw TopApp:PID wrtbl(KB) command\n")
-        lfile.close()
-    except:
-        print(" \033[0m \033[95m ERROR: Failed to prepare/create the log file "
-              "in current directory!\033[0m")
-        _log = False
-
-###########################################
-#######      BODY: LOOPING       ##########
-###########################################
-
-while True:
-    memD = {}  # key(~memory):real memory
-    keys = ()  # list of keys (to be listed by size)
-    key_pid = {}  # key(~memory):PID
-    pid_mem = {}  # dictionary of PID to cur memory, redefining to empty it
-    # this is ugly workaround to make sure there are no same numbers
-    margin = 0.0001
-    totalMemByPmap = 0
-    oldMemDtmp = {}      # dictionary of mem. in previous iteration PID:mem
-    processes = 0  # count of identified processes
-
-    # first we will identify number of processes
-    for dir in listdir('/proc'):
-        try:  # elimination non-numerical dirs
-            int(dir)  # dir = PID
-        except:
-            continue
-
-        # calculating private memory in /proc/$PID/maps file
-        try:
-            realMem = getPrivateMem(dir)
-        except:  # process probably doesnt exist anymore
-            continue
-
-        totalMemByPmap = totalMemByPmap + int(realMem)
-
-        # creating key, this is basically real memory plus
-        # a very small number
-        key1 = int(realMem) + margin
-        key_pid[key1] = dir
-        pid_mem[dir] = realMem
-        margin = margin + 0.0001
-    # now we have all memory data for current iteration
-
-    # creating list of keys - sorted
-    keys = key_pid.keys()
-    keys = sorted(keys, reverse=True)
-    processes = len(keys)
-    #print (key_pid)
-
-    ##############  printing ##################
-
-    # finding terminal lenght (doing it every iteration)
-    try:
-        width = int(getCommandOutput("stty size | awk '{print $2}'"))
-    except:
-        width = 80
-    if width < 46:
-        print('\033[0m' + '\033[95;1m' + " ! Terminal width " +
-              str(width) + " not sufficient, 46 is minimum...." + '\033[0m')
-        width = 46
-
-    # calculating widht of individual columns
-    col1, col2, col3 = 8, 11, 11
-    col4 = int((width - col1 - col2 - col3 - 2) / 2)
-    col5 = width - col1 - col2 - col3 - col4
-
-    # printing header
-    if _format == "numb":
-        a = "previous |"
-    elif _format == "graph":
-        a = "change  |"
-    curtime = strftime("%d %b %H:%M:%S", localtime())[-col5:]
-    print("\033[0m\033[1m{:>{a}s}{:>{b}s}{:<{c}s}{:>{d}s}".format(
-          "PID |",
-          "private/writ. mem |",
-          "command",
-          curtime,
-          a=col1,
-          b=col2 + col3,
-          c=col4,
-          d=col5))
-    wtime = str("(waiting " + str(_period) + " min.)")[-col5:]
-    trunc = "(might be truncated)"[:col4]
-    print("{:>{a}s}{:>{b}s}{:>{c}s}{:<{d}s}{:>{e}s}\033[0m".format(
-          "|",
-          "current |",
-          a,
-          trunc,
-          wtime,
-          a=col1, b=col2, c=col3, d=col4, e=col5))
-
-    # printing body (lines with processes)
-    printedlines = 0  # just count printed lines
-    #print ("processes:" +processes)
-    for item in keys[0:processes]:
-
-        #print ("Doing: "+item)
-        # gettind command and shortening if needed
-        try:
-            pid = key_pid[item]
-            cmdfile = str("/proc/" + str(pid) + "/cmdline")
-            f = open(cmdfile, 'r')
-            command = open(cmdfile, "rt").read().replace(
-                "\0", " ")[:col4 + col5]
-            f.close()
-        except:
-            continue
-
-        #print (command)
-        # getting formatted value of current memory usage
-        curMem = pid_mem[pid]
-        try:
-            oldMem = pid_omem[pid]
-        except:
-            oldMem = 0
-
-        curMemStr = formatMemNumb(curMem)
-        if _format == "numb":
-            s2 = formatMemNumb(oldMem) + " |"
-        elif _format == "graph":
-            s2 = graphFormat(curMem, oldMem) + " |"
-
-        s0 = str(key_pid[item] + " |")
-        s1 = str(curMemStr + " |")
-        # getting rid of binary characters
-        command = ''.join(s for s in command if s in printable)
-
-        print("{:>{a}s}{:>{b}s}{:>{c}s}{:<{d}s}".format(
-            s0, s1, s2, command, a=col1, b=col2, c=col3, d=col4 + col5))
-
-        if _log and printedlines == 0:
-            outline_comm = " {:>7s} {:>9.0f}  {:20s}".format(
-                pid, round(curMem / 1024, 0), command)
-
-        printedlines = printedlines + 1
-        if printedlines >= _rows:
-            break
-
-    # printing footer - info on overall cpu utilization
-    totalMem, ramuse, swapuse = getCurMemUse()
-    totalMemByPmapKB = int(round(totalMemByPmap / 1000, 1))
-    curMemUsage = round(totalMemByPmapKB * 100 / float(totalMem), 1)
-
-    if _format == "numb":
-        print("{:>18s}{:>4.1f}{:s}{:5.1f}{:<1s}".format(
-            "Writeable/RAM: ",
-            curMemUsage,
-            "%     (old value: ",
-            oldMemUsage, "%)"))
-    elif _format == "graph":
-        onePrc = width / 280.0
-        firstLen = int(round(min(curMemUsage, 100) * onePrc))
-        if curMemUsage > 100:
-            secondLen = int(round((curMemUsage - 100) * onePrc))
-        else:
-            secondLen = 0
-        # print curMemUsage, onePrc, firstLen , secondLen
-        bar = str('=' * firstLen + str('#' * secondLen))
-        print("{:>18s}{:s}{:>6.1f}{:s}".format(
-            "Writeable/RAM: ", bar, curMemUsage, "%"))
-
-    else:
-        print((" ! Unexpected data presentation format - internall error, "
-               "quitting..."))
-        exit()
-
-    if _more:
-        print("   RAM use without cached pages: " +
-              ramuse + "% , SWAP use: " + swapuse + "%")
-    if _more or _log:
-        checkSwapping()
-
-    # print warning if user is not root
-    if "root" not in user:
+        oldMemUsage = curMemUsage
+        pid_omem = pid_mem.copy()
         print("")
-        print("     \033[0m \033[95m WARNING: Running without ROOT "
-              "CREDENTIALS, data might be incomplete...\033[0m")
 
-    oldMemUsage = curMemUsage
-    pid_omem = pid_mem.copy()
-    print("")
+        _firstiteration = False
 
-    _firstiteration = False
+        # because of problems when piping output. But might be not needed
+        stdout.flush()
 
-    # because of problems when piping output. But might be not needed
-    stdout.flush()
+        # writing logfile
+        if _log:
+            lfile = open(_logfile, 'a')
+            outline_time = strftime("%d/%m/%Y") + " " + strftime("%H:%M") + " "
+            outline_ram = " {:>5s} {:>5s} {:>5s}".format(
+                str(curMemUsage), str(ramuse), str(swapuse))
+            outline_pg = " {:>8.2f}{:>8.2f}{:>6.1f}".format(
+                _pageinsec, _pageoutsec, _IOwaitprc)
+            lfile.write(
+                outline_time + outline_ram + outline_pg + outline_comm + "\n")
+            lfile.close()
 
-    # writing logfile
-    if _log:
-        lfile = open(_logfile, 'a')
-        outline_time = strftime("%d/%m/%Y") + " " + strftime("%H:%M") + " "
-        outline_ram = " {:>5s} {:>5s} {:>5s}".format(
-            str(curMemUsage), str(ramuse), str(swapuse))
-        outline_pg = " {:>8.2f}{:>8.2f}{:>6.1f}".format(
-            _pageinsec, _pageoutsec, _IOwaitprc)
-        lfile.write(
-            outline_time + outline_ram + outline_pg + outline_comm + "\n")
-        lfile.close()
+        sleep(_period * 60 - 2)
 
-    sleep(_period * 60 - 2)
+if __name__ == '__main__':
+    main()

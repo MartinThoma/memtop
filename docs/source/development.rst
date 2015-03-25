@@ -77,3 +77,4 @@ Current State
     date,              LOC,  LOT, cov, lint, cheesecake_index, changes
     2015-03-25 11:48,  392,    0,  0%, 8.44,                -, some PEP8 changes
     2015-03-25 11:56,  412,    0,  0%, 8.24,                -, maximum line length of 80 chars
+    2015-03-25 12:28,  385,    0,  0%, 7.84,                -, use argparse for argument parsing; put code in main()
