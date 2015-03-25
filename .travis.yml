@@ -1,0 +1,11 @@
+language: python
+python:
+  - 2.7
+  - 3.3
+  - 3.4
+script:
+  - nosetests --with-coverage
+script:
+  - nosetests --with-cov --cover-package hwrt --logging-level=INFO
+after_success:
+  - coveralls

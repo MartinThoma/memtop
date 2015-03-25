@@ -185,7 +185,7 @@ to create two graphs from the log file. Use:
 If no argument is given, it expects memtop.log file in current
 directory. Example of output:
 
-.. figure:: https://raw.githubusercontent.com/MartinThoma/memtop/master/out.png
+.. figure:: https://raw.githubusercontent.com/MartinThoma/memtop/master/docs/source/out.png
    :alt: 
 
 Obviously, nothing much special here. The box was idle most of time,
