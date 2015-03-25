@@ -6,4 +6,4 @@ os.chdir("docs")
 
 os.system("make html")
 os.chdir("..")
-os.system("python setup.py upload_docs --upload-dir docs/_build/html")
+os.system("python setup.py upload_docs --upload-dir docs/build/html")

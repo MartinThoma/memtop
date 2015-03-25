@@ -91,27 +91,25 @@ def format_mem_numb(memory):
     return memOutput
 
 
-def graph_format(newMem, oldMem):
+def graph_format(new_mem, old_mem, is_firstiteration=True):
     """Show changes graphically in memory consumption"""
-    global _firstiteration
-
-    if _firstiteration:
+    if is_firstiteration:
         output = "  n/a   "
-    elif newMem - oldMem > 50000000:
+    elif new_mem - old_mem > 50000000:
         output = "   +++++"
-    elif newMem - oldMem > 20000000:
+    elif new_mem - old_mem > 20000000:
         output = "   ++++ "
-    elif newMem - oldMem > 5000000:
+    elif new_mem - old_mem > 5000000:
         output = "   +++  "
-    elif newMem - oldMem > 1000000:
+    elif new_mem - old_mem > 1000000:
         output = "   ++   "
-    elif newMem - oldMem > 50000:
+    elif new_mem - old_mem > 50000:
         output = "   +    "
-    elif oldMem - newMem > 10000000:
+    elif old_mem - new_mem > 10000000:
         output = "---     "
-    elif oldMem - newMem > 2000000:
+    elif old_mem - new_mem > 2000000:
         output = " --     "
-    elif oldMem - newMem > 100000:
+    elif old_mem - new_mem > 100000:
         output = "  -     "
     else:
         output = "        "
@@ -163,9 +161,7 @@ def get_private_mem(pid):
     return sum_private_mem
 
 
-def check_swapping(verbose=False):
-
-    global _firstiteration
+def check_swapping(is_firstiteration=True, verbose=False):
     global _curtime
     global _oldtime
     global _oldpswpin
@@ -204,7 +200,7 @@ def check_swapping(verbose=False):
     cpucount = int(sysconf(sysconf_names['SC_NPROCESSORS_ONLN']))
     _jiffy = int(sysconf(sysconf_names['SC_CLK_TCK']))
 
-    if not _firstiteration:
+    if not is_firstiteration:
 
         timediff = _curtime - _oldtime
         _swapinsec = (pswpin - _oldpswpin) / timediff
@@ -449,7 +445,7 @@ def main():
             if _format == "numb":
                 s2 = format_mem_numb(oldMem) + " |"
             elif _format == "graph":
-                s2 = graph_format(curMem, oldMem) + " |"
+                s2 = graph_format(curMem, oldMem, _firstiteration) + " |"
 
             s0 = str(key_pid[item] + " |")
             s1 = str(curMemStr + " |")
@@ -499,7 +495,7 @@ def main():
             print("   RAM use without cached pages: " +
                   ramuse + "% , SWAP use: " + swapuse + "%")
         if verbose or _log:
-            check_swapping(verbose)
+            check_swapping(_firstiteration, verbose)
 
         # print warning if user is not root
         if "root" not in user:
