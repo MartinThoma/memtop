@@ -211,7 +211,7 @@ def check_swapping(is_firstiteration=True, verbose=False):
         if verbose:
             print(("   Swapping: %0.1f / %0.1f, "
                    "Paging: %0.1f / %0.1f (in/out / sec). "
-                   "CPU I/O wait: %0.1f %") %
+                   "CPU I/O wait: %0.1f %%") %
                   (round(_swapinsec, 1),
                    round(_swapoutsec, 1),
                    round(_pageinsec, 1),

@@ -3,7 +3,7 @@ docs:
 
 update:
 	python setup.py sdist upload --sign
-	sudo pip install memtop --upgrade
+	sudo -H pip install memtop --upgrade
 
 test:
 	nosetests --with-coverage --cover-erase --cover-package memtop --logging-level=INFO --cover-html
@@ -22,4 +22,9 @@ countt:
 	cloc tests
 
 clean:
-	rm *.hdf5 *.yml *.csv
+	rm -f *.hdf5 *.yml *.csv
+	rm -rf docs/build
+	rm -rf cover
+	rm -rf build
+	find . -type f -name "*.py[co]" -delete
+	find . -type d -name "__pycache__" -delete

@@ -5,7 +5,7 @@ except ImportError:
 
 config = {
     'name': 'memtop',
-    'version': '1.0.2',
+    'version': '1.0.3',
     'author': 'Tibor Bamhor, Martin Thoma',
     'author_email': 'info@martin-thoma.de',
     'maintainer': 'Martin Thoma',
