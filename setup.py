@@ -1,11 +1,22 @@
+# Core modules
+import io
+import os
+
 try:
     from setuptools import setup
 except ImportError:
     from distutils.core import setup
 
+
+def read(file_name):
+    """Read a text file and return the content as a string."""
+    with io.open(os.path.join(os.path.dirname(__file__), file_name),
+                 encoding='utf-8') as f:
+        return f.read()
+
 config = {
     'name': 'memtop',
-    'version': '1.0.3',
+    'version': '1.0.4',
     'author': 'Tibor Bamhor, Martin Thoma',
     'author_email': 'info@martin-thoma.de',
     'maintainer': 'Martin Thoma',
@@ -16,20 +27,14 @@ config = {
     'url': 'https://github.com/MartinThoma/memtop',
     'license': 'GPLv2',
     'description': 'view memory consumption of processes',
-    'long_description': ("memtop is command line utility to help user to find "
-                         "out what applications uses biggest portions of the "
-                         "memory (RAM+swap), sorted in decreasing order. "
-                         "It lists private/writeable memory only, that is "
-                         "without shared memory. Typical use is when you need "
-                         "to reduce the overall RAM consumption or when you "
-                         "encounter performance problems. "
-                         "Memtop gets data from /proc/ virtual filesystem."),
+    'long_description': read('README.md'),
+    'long_description_content_type': 'text/markdown',
     'install_requires': [
         "argparse",
     ],
     'keywords': ['memory', 'consumption'],
     'download_url': 'https://github.com/MartinThoma/memtop',
-    'classifiers': ['Development Status :: 3 - Alpha',
+    'classifiers': ['Development Status :: 7 - Inactive',
                     'Environment :: Console',
                     'Intended Audience :: Developers',
                     'License :: OSI Approved :: GNU General Public License (GPL)',
