@@ -1,4 +1,4 @@
-# Core modules
+# Core Library modules
 import io
 import os
 

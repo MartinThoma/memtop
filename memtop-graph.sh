@@ -1,5 +1,5 @@
 #!/bin/bash
-# Graphs creator for memtop.py. 
+# Graphs creator for memtop.py.
 # This is kind of a wrapper around two gnuplot scripts (incorporated).
 # The script takes one optional argument - filename with memtop log,
 # if no file given, it expects memtop.log in current dir.
@@ -71,12 +71,12 @@ set xtics rotate
 
 set key outside
 set key below
-set key horizontal 
+set key horizontal
 
 set ylabel "% of utlization"
 #set yrange [0:150]
 
-set title "RAM & SWAP Utilization" 
+set title "RAM & SWAP Utilization"
 #set key reverse Left outside
 set grid
 

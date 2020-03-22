@@ -11,17 +11,17 @@ encounter performance problems.
 Memtop gets data from /proc/ virtual filesystem.
 """
 
+# Core Library modules
 import logging
 import sys
+
+# First party modules
+import memtop
+
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
                     level=logging.DEBUG,
                     stream=sys.stdout)
 
-# memtop modules
-# Every HWR tool that should be available through
-#   memtop TOOL
-# has to be added to ``get_parser()`` and to ``main``.
-import memtop
 
 if __name__ == '__main__':
     memtop.main()

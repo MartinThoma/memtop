@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import nose
+# Core Library modules
 import os
 
+# Third party modules
+import nose
+
+# First party modules
 import memtop
 
 

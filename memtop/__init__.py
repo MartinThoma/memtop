@@ -8,8 +8,19 @@ encounter performance problems.
 Memtop gets data from /proc/ virtual filesystem.
 """
 
-from pkg_resources import get_distribution, DistributionNotFound
+# Core Library modules
 import os.path
+import re
+import signal
+import sys
+from os import getenv, listdir, path, sysconf, sysconf_names
+from shutil import move
+from string import printable
+from subprocess import PIPE, Popen
+from time import localtime, sleep, strftime, time
+
+# Third party modules
+from pkg_resources import DistributionNotFound, get_distribution
 
 try:
     _dist = get_distribution("memtop")
@@ -31,14 +42,6 @@ else:
 # pid_mem  - dictionary PID:Memory
 
 
-from os import listdir, getenv, path, sysconf, sysconf_names
-from subprocess import Popen, PIPE
-from time import sleep, strftime, localtime, time
-import sys
-import re
-from string import printable
-from shutil import move
-import signal
 
 
 # GLOBAL VARIABLES
@@ -239,11 +242,9 @@ def check_py_version():
     print(" ")
     print(" ERROR - memtop needs python version at least 2.7")
     print(
-        (
             "Chances are that you can install newer version from your "
             "repositories, or even that you have some newer version "
             "installed yet."
-        )
     )
     print(
         "(one way to find out which versions are installed is to try "
@@ -542,10 +543,8 @@ def main():
 
         else:
             print(
-                (
                     " ! Unexpected data presentation format - internall error, "
                     "quitting..."
-                )
             )
             sys.exit()
 
