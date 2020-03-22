@@ -1,5 +1,3 @@
-
-
 """
 memtop is command line utility to help user to find out what applications uses
 biggest portions of the memory (RAM+swap), sorted in decreasing order.
@@ -14,15 +12,15 @@ from pkg_resources import get_distribution, DistributionNotFound
 import os.path
 
 try:
-    _dist = get_distribution('memtop')
+    _dist = get_distribution("memtop")
     # Normalize case for Windows systems
     dist_loc = os.path.normcase(_dist.location)
     here = os.path.normcase(__file__)
-    if not here.startswith(os.path.join(dist_loc, 'memtop')):
+    if not here.startswith(os.path.join(dist_loc, "memtop")):
         # not installed, but there is another version that *is*
         raise DistributionNotFound
 except DistributionNotFound:
-    __version__ = 'Please install this project with setup.py'
+    __version__ = "Please install this project with setup.py"
 else:
     __version__ = _dist.version
 
@@ -119,8 +117,8 @@ def get_cur_mem_use():
     """return utilization of memory"""
     # http://lwn.net/Articles/28345/
 
-    lines = open("/proc/meminfo", 'r').readlines()
-    emptySpace = re.compile('[ ]+')
+    lines = open("/proc/meminfo", "r").readlines()
+    emptySpace = re.compile("[ ]+")
     for line in lines:
         if "MemTotal" in line:
             memtotal = float(emptySpace.split(line)[1])
@@ -182,7 +180,7 @@ def check_swapping(is_firstiteration=True, verbose=False):
         print("   ERROR: file /proc/stat not found...")
         return
 
-    emptySpace = re.compile('[ ]+')
+    emptySpace = re.compile("[ ]+")
 
     for line in open("/proc/vmstat").readlines():
         if "pswpin" in line:
@@ -196,8 +194,8 @@ def check_swapping(is_firstiteration=True, verbose=False):
         _curtime = time()
 
     IOwait = int(open("/proc/stat").readlines()[0].split()[5])
-    cpucount = int(sysconf(sysconf_names['SC_NPROCESSORS_ONLN']))
-    _jiffy = int(sysconf(sysconf_names['SC_CLK_TCK']))
+    cpucount = int(sysconf(sysconf_names["SC_NPROCESSORS_ONLN"]))
+    _jiffy = int(sysconf(sysconf_names["SC_CLK_TCK"]))
 
     if not is_firstiteration:
 
@@ -206,17 +204,22 @@ def check_swapping(is_firstiteration=True, verbose=False):
         _swapoutsec = (pswpout - _oldpswpout) / timediff
         _pageinsec = (pgpgin - _oldpgpgin) / timediff
         _pageoutsec = (pgpgout - _oldpgpgout) / timediff
-        _IOwaitprc = (IOwait - _oldIOwait) * 100 / \
-            _jiffy / (cpucount * timediff)
+        _IOwaitprc = (IOwait - _oldIOwait) * 100 / _jiffy / (cpucount * timediff)
         if verbose:
-            print(("   Swapping: %0.1f / %0.1f, "
-                   "Paging: %0.1f / %0.1f (in/out / sec). "
-                   "CPU I/O wait: %0.1f %%") %
-                  (round(_swapinsec, 1),
-                   round(_swapoutsec, 1),
-                   round(_pageinsec, 1),
-                   round(_pageoutsec, 1),
-                   round(_IOwaitprc, 1)))
+            print(
+                (
+                    "   Swapping: %0.1f / %0.1f, "
+                    "Paging: %0.1f / %0.1f (in/out / sec). "
+                    "CPU I/O wait: %0.1f %%"
+                )
+                % (
+                    round(_swapinsec, 1),
+                    round(_swapoutsec, 1),
+                    round(_pageinsec, 1),
+                    round(_pageoutsec, 1),
+                    round(_IOwaitprc, 1),
+                )
+            )
 
     _oldpswpin = pswpin
     _oldpswpout = pswpout
@@ -235,11 +238,17 @@ def check_py_version():
         pass
     print(" ")
     print(" ERROR - memtop needs python version at least 2.7")
-    print(("Chances are that you can install newer version from your "
-           "repositories, or even that you have some newer version "
-           "installed yet."))
-    print("(one way to find out which versions are installed is to try "
-          "following: 'which python2.7' , 'which python3' and so...)")
+    print(
+        (
+            "Chances are that you can install newer version from your "
+            "repositories, or even that you have some newer version "
+            "installed yet."
+        )
+    )
+    print(
+        "(one way to find out which versions are installed is to try "
+        "following: 'which python2.7' , 'which python3' and so...)"
+    )
     print(" ")
     sys.exit(-1)
 
@@ -247,46 +256,62 @@ def check_py_version():
 def get_parser():
     from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
     from argparse import ArgumentTypeError
-    parser = ArgumentParser(description=__doc__,
-                            formatter_class=ArgumentDefaultsHelpFormatter)
+
+    parser = ArgumentParser(
+        description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter
+    )
 
     def positive(value):
         ivalue = int(value)
         if ivalue < 0:
-            raise ArgumentTypeError("%s is an invalid positive int value" %
-                                    value)
+            raise ArgumentTypeError("%s is an invalid positive int value" % value)
         return ivalue
 
-    parser.add_argument("-p", "--period",
-                        dest="period",
-                        default=15,
-                        type=positive,
-                        help="waittime between iterations in minutes")
-    parser.add_argument("-s", "--show",
-                        dest="show",
-                        default='graph',
-                        choices=['graph', 'numb'],
-                        help=("it selects the way how data mainly for "
-                              "previous period are presented."))
-    parser.add_argument("-l", "--lines",
-                        dest="lines",
-                        default=10,
-                        type=int,
-                        help=("number of processes reported"))
-    parser.add_argument("-v", "--verbose",
-                        dest="verbose",
-                        action="store_true",
-                        default=False,
-                        help=("additional info about memory utilization and "
-                              "swaping/paging"))
-    parser.add_argument("-L", "--log",
-                        dest="log",
-                        action="store_true",
-                        default=False,
-                        help=("saves basic data into logfile"))
-    parser.add_argument('--version',
-                        action='version',
-                        version=('memtop %s' % str(__version__)))
+    parser.add_argument(
+        "-p",
+        "--period",
+        dest="period",
+        default=15,
+        type=positive,
+        help="waittime between iterations in minutes",
+    )
+    parser.add_argument(
+        "-s",
+        "--show",
+        dest="show",
+        default="graph",
+        choices=["graph", "numb"],
+        help=(
+            "it selects the way how data mainly for " "previous period are presented."
+        ),
+    )
+    parser.add_argument(
+        "-l",
+        "--lines",
+        dest="lines",
+        default=10,
+        type=int,
+        help=("number of processes reported"),
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        dest="verbose",
+        action="store_true",
+        default=False,
+        help=("additional info about memory utilization and " "swaping/paging"),
+    )
+    parser.add_argument(
+        "-L",
+        "--log",
+        dest="log",
+        action="store_true",
+        default=False,
+        help=("saves basic data into logfile"),
+    )
+    parser.add_argument(
+        "--version", action="version", version=("memtop %s" % str(__version__))
+    )
     return parser
 
 
@@ -312,7 +337,7 @@ def main():
     # the following two methods are not reliable
     if user == "failed":
         try:
-            user = getenv('USER').decode()
+            user = getenv("USER").decode()
         except:
             pass
     if user == "failed":
@@ -323,13 +348,17 @@ def main():
         try:  # the destination might not be writeable
             if path.isfile(_logfile):
                 move(_logfile, _logfile + ".old")
-            lfile = open(_logfile, 'a')
-            lfile.write("##Date     time   wrtble ram   swap     pgin   "
-                        "pgout   IOw TopApp:PID wrtbl(KB) command\n")
+            lfile = open(_logfile, "a")
+            lfile.write(
+                "##Date     time   wrtble ram   swap     pgin   "
+                "pgout   IOw TopApp:PID wrtbl(KB) command\n"
+            )
             lfile.close()
         except:
-            print(" \033[0m \033[95m ERROR: Failed to prepare/create the "
-                  "log file in current directory!\033[0m")
+            print(
+                " \033[0m \033[95m ERROR: Failed to prepare/create the "
+                "log file in current directory!\033[0m"
+            )
             _log = False
 
     while True:
@@ -340,11 +369,11 @@ def main():
         # this is ugly workaround to make sure there are no same numbers
         margin = 0.0001
         totalMemByPmap = 0
-        oldMemDtmp = {}      # dictionary of mem. in previous iteration PID:mem
+        oldMemDtmp = {}  # dictionary of mem. in previous iteration PID:mem
         processes = 0  # count of identified processes
 
         # first we will identify number of processes
-        for directory in listdir('/proc'):
+        for directory in listdir("/proc"):
             try:  # elimination non-numerical dirs
                 int(directory)  # directory = PID
             except:
@@ -370,7 +399,7 @@ def main():
         keys = key_pid.keys()
         keys = sorted(keys, reverse=True)
         processes = len(keys)
-        #print (key_pid)
+        # print (key_pid)
 
         ##############  printing ##################
 
@@ -380,9 +409,14 @@ def main():
         except:
             width = 80
         if width < 46:
-            print('\033[0m' + '\033[95;1m' + " ! Terminal width " +
-                  str(width) + " not sufficient, 46 is minimum...." +
-                  '\033[0m')
+            print(
+                "\033[0m"
+                + "\033[95;1m"
+                + " ! Terminal width "
+                + str(width)
+                + " not sufficient, 46 is minimum...."
+                + "\033[0m"
+            )
             width = 46
 
         # calculating widht of individual columns
@@ -396,45 +430,52 @@ def main():
         elif _format == "graph":
             a = "change  |"
         curtime = strftime("%d %b %H:%M:%S", localtime())[-col5:]
-        print("\033[0m\033[1m{:>{a}s}{:>{b}s}{:<{c}s}{:>{d}s}".format("PID |",
-                                                                      "private/writ. mem |",
-                                                                      "command",
-                                                                      curtime,
-                                                                      a=col1,
-                                                                      b=col2 + col3,
-                                                                      c=col4,
-                                                                      d=col5))
+        print(
+            "\033[0m\033[1m{:>{a}s}{:>{b}s}{:<{c}s}{:>{d}s}".format(
+                "PID |",
+                "private/writ. mem |",
+                "command",
+                curtime,
+                a=col1,
+                b=col2 + col3,
+                c=col4,
+                d=col5,
+            )
+        )
         wtime = str("(waiting " + str(_period) + " min.)")[-col5:]
         trunc = "(might be truncated)"[:col4]
-        print("{:>{a}s}{:>{b}s}{:>{c}s}{:<{d}s}{:>{e}s}\033[0m".format("|",
-                                                                       "current |",
-                                                                       a,
-                                                                       trunc,
-                                                                       wtime,
-                                                                       a=col1,
-                                                                       b=col2,
-                                                                       c=col3,
-                                                                       d=col4,
-                                                                       e=col5))
+        print(
+            "{:>{a}s}{:>{b}s}{:>{c}s}{:<{d}s}{:>{e}s}\033[0m".format(
+                "|",
+                "current |",
+                a,
+                trunc,
+                wtime,
+                a=col1,
+                b=col2,
+                c=col3,
+                d=col4,
+                e=col5,
+            )
+        )
 
         # printing body (lines with processes)
         printedlines = 0  # just count printed lines
-        #print ("processes:" +processes)
+        # print ("processes:" +processes)
         for item in keys[0:processes]:
 
-            #print ("Doing: "+item)
+            # print ("Doing: "+item)
             # gettind command and shortening if needed
             try:
                 pid = key_pid[item]
                 cmdfile = str("/proc/" + str(pid) + "/cmdline")
-                f = open(cmdfile, 'r')
-                command = open(cmdfile, "rt").read().replace(
-                    "\0", " ")[:col4 + col5]
+                f = open(cmdfile, "r")
+                command = open(cmdfile, "rt").read().replace("\0", " ")[: col4 + col5]
                 f.close()
             except:
                 continue
 
-            #print (command)
+            # print (command)
             # getting formatted value of current memory usage
             curMem = pid_mem[pid]
             try:
@@ -451,14 +492,18 @@ def main():
             s0 = str(key_pid[item] + " |")
             s1 = str(curMemStr + " |")
             # getting rid of binary characters
-            command = ''.join(s for s in command if s in printable)
+            command = "".join(s for s in command if s in printable)
 
-            print("{:>{a}s}{:>{b}s}{:>{c}s}{:<{d}s}".format(
-                s0, s1, s2, command, a=col1, b=col2, c=col3, d=col4 + col5))
+            print(
+                "{:>{a}s}{:>{b}s}{:>{c}s}{:<{d}s}".format(
+                    s0, s1, s2, command, a=col1, b=col2, c=col3, d=col4 + col5
+                )
+            )
 
             if _log and printedlines == 0:
                 outline_comm = " {:>7s} {:>9.0f}  {:20s}".format(
-                    pid, round(curMem / 1024, 0), command)
+                    pid, round(curMem / 1024, 0), command
+                )
 
             printedlines = printedlines + 1
             if printedlines >= _rows:
@@ -471,11 +516,15 @@ def main():
 
         if _format == "numb":
             formatting_string = "{:>18s}{:>4.1f}{:s}{:5.1f}{:<1s}"
-            print(formatting_string.format("Writeable/RAM: ",
-                                           curMemUsage,
-                                           "%     (old value: ",
-                                           oldMemUsage,
-                                           "%)"))
+            print(
+                formatting_string.format(
+                    "Writeable/RAM: ",
+                    curMemUsage,
+                    "%     (old value: ",
+                    oldMemUsage,
+                    "%)",
+                )
+            )
         elif _format == "graph":
             onePrc = width / 280.0
             firstLen = int(round(min(curMemUsage, 100) * onePrc))
@@ -484,26 +533,40 @@ def main():
             else:
                 secondLen = 0
             # print curMemUsage, onePrc, firstLen , secondLen
-            bar = str('=' * firstLen + str('#' * secondLen))
-            print("{:>18s}{:s}{:>6.1f}{:s}".format(
-                "Writeable/RAM: ", bar, curMemUsage, "%"))
+            bar = str("=" * firstLen + str("#" * secondLen))
+            print(
+                "{:>18s}{:s}{:>6.1f}{:s}".format(
+                    "Writeable/RAM: ", bar, curMemUsage, "%"
+                )
+            )
 
         else:
-            print((" ! Unexpected data presentation format - internall error, "
-                   "quitting..."))
+            print(
+                (
+                    " ! Unexpected data presentation format - internall error, "
+                    "quitting..."
+                )
+            )
             sys.exit()
 
         if verbose:
-            print("   RAM use without cached pages: " +
-                  ramuse + "% , SWAP use: " + swapuse + "%")
+            print(
+                "   RAM use without cached pages: "
+                + ramuse
+                + "% , SWAP use: "
+                + swapuse
+                + "%"
+            )
         if verbose or _log:
             check_swapping(_firstiteration, verbose)
 
         # print warning if user is not root
         if "root" not in user:
             print("")
-            print("     \033[0m \033[95m WARNING: Running without ROOT "
-                  "CREDENTIALS, data might be incomplete...\033[0m")
+            print(
+                "     \033[0m \033[95m WARNING: Running without ROOT "
+                "CREDENTIALS, data might be incomplete...\033[0m"
+            )
 
         oldMemUsage = curMemUsage
         pid_omem = pid_mem.copy()
@@ -516,17 +579,19 @@ def main():
 
         # writing logfile
         if _log:
-            lfile = open(_logfile, 'a')
+            lfile = open(_logfile, "a")
             outline_time = strftime("%d/%m/%Y") + " " + strftime("%H:%M") + " "
             outline_ram = " {:>5s} {:>5s} {:>5s}".format(
-                str(curMemUsage), str(ramuse), str(swapuse))
+                str(curMemUsage), str(ramuse), str(swapuse)
+            )
             outline_pg = " {:>8.2f}{:>8.2f}{:>6.1f}".format(
-                _pageinsec, _pageoutsec, _IOwaitprc)
-            lfile.write(
-                outline_time + outline_ram + outline_pg + outline_comm + "\n")
+                _pageinsec, _pageoutsec, _IOwaitprc
+            )
+            lfile.write(outline_time + outline_ram + outline_pg + outline_comm + "\n")
             lfile.close()
 
         sleep(_period * 60 - 2)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

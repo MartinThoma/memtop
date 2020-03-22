@@ -22,9 +22,13 @@ def parser_test():
 
 def format_mem_numb_test():
     nose.tools.assert_equal(memtop.format_mem_numb(12), "12 B")
-    nose.tools.assert_equal(memtop.format_mem_numb(1023), "1023 B")  # TODO: should be kiB
+    nose.tools.assert_equal(
+        memtop.format_mem_numb(1023), "1023 B"
+    )  # TODO: should be kiB
     nose.tools.assert_equal(memtop.format_mem_numb(1200), "1.2 kB")
-    nose.tools.assert_equal(memtop.format_mem_numb(1200000), "1.1 MB")  # TODO: Is this right?
+    nose.tools.assert_equal(
+        memtop.format_mem_numb(1200000), "1.1 MB"
+    )  # TODO: Is this right?
 
 
 def get_private_mem_test():
