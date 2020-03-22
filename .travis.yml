@@ -3,7 +3,9 @@ python:
   - 3.6
   - 3.7
   - 3.8
+install:
+  - pip install coveralls tox-travis
 script:
-  - nosetests --with-coverage
+  - tox
 after_success:
   - coveralls

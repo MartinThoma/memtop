@@ -42,8 +42,6 @@ else:
 # pid_mem  - dictionary PID:Memory
 
 
-
-
 # GLOBAL VARIABLES
 _rows = 10  # number of programs to list
 _period = 15  # default period
@@ -242,9 +240,9 @@ def check_py_version():
     print(" ")
     print(" ERROR - memtop needs python version at least 2.7")
     print(
-            "Chances are that you can install newer version from your "
-            "repositories, or even that you have some newer version "
-            "installed yet."
+        "Chances are that you can install newer version from your "
+        "repositories, or even that you have some newer version "
+        "installed yet."
     )
     print(
         "(one way to find out which versions are installed is to try "
@@ -543,8 +541,8 @@ def main():
 
         else:
             print(
-                    " ! Unexpected data presentation format - internall error, "
-                    "quitting..."
+                " ! Unexpected data presentation format - internall error, "
+                "quitting..."
             )
             sys.exit()
 
