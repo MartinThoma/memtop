@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 memtop is command line utility to help user to find out what applications uses
@@ -18,10 +17,12 @@ import sys
 # First party modules
 import memtop
 
-logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
-                    level=logging.DEBUG,
-                    stream=sys.stdout)
+logging.basicConfig(
+    format="%(asctime)s %(levelname)s %(message)s",
+    level=logging.DEBUG,
+    stream=sys.stdout,
+)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     memtop.main()

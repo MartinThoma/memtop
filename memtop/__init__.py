@@ -118,7 +118,7 @@ def get_cur_mem_use():
     """return utilization of memory"""
     # http://lwn.net/Articles/28345/
 
-    lines = open("/proc/meminfo", "r").readlines()
+    lines = open("/proc/meminfo").readlines()
     emptySpace = re.compile("[ ]+")
     for line in lines:
         if "MemTotal" in line:
@@ -468,8 +468,8 @@ def main():
             try:
                 pid = key_pid[item]
                 cmdfile = str("/proc/" + str(pid) + "/cmdline")
-                f = open(cmdfile, "r")
-                command = open(cmdfile, "rt").read().replace("\0", " ")[: col4 + col5]
+                f = open(cmdfile)
+                command = open(cmdfile).read().replace("\0", " ")[: col4 + col5]
                 f.close()
             except:
                 continue
