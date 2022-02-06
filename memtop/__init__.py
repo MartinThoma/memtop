@@ -48,10 +48,7 @@ _rows = 10  # number of programs to list
 _period = 15  # default period
 _format = "graph"
 _log = False
-
-# dictionary PID:mem
-pid_omem: Dict[str, float] = {}
-
+pid_omem: Dict[str, float] = {}  # dictionary PID:mem
 _firstiteration = True
 _curtime = 0
 _oldtime = 0
