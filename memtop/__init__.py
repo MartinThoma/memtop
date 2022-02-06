@@ -510,7 +510,7 @@ def main():
         curMemUsage = round(totalMemByPmapKB * 100 / float(totalMem), 1)
 
         if _format == "numb":
-            formatting_string = "{:>18s}{:>4.1f}{:s}{:5.1f}{:<1s}"
+            formatting_string = "{:>18s}{:>4.1f}{:s}{:5.1f}{:<1s}"  # noqa
             print(
                 formatting_string.format(
                     "Writeable/RAM: ",
@@ -562,7 +562,7 @@ def main():
             )
 
         oldMemUsage = curMemUsage
-        pid_omem = pid_mem.copy()
+        globals()["pid_omem"] = pid_mem.copy()
         print("")
 
         _firstiteration = False
