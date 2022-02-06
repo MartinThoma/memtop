@@ -2,6 +2,7 @@
 [![Coverage Status](https://img.shields.io/coveralls/MartinThoma/memtop.svg)](https://coveralls.io/r/MartinThoma/memtop?branch=master)
 [![Documentation Status](http://img.shields.io/badge/docs-latest-brightgreen.svg)](http://pythonhosted.org/memtop)
 [![Code Health](https://landscape.io/github/MartinThoma/memtop/master/landscape.svg)](https://landscape.io/github/MartinThoma/memtop/master)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 # memtop
 memtop is command line utility to help user to find out what applications uses

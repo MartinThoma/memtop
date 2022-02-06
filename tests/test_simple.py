@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Core Library modules
 import os
 
@@ -38,8 +36,6 @@ def test_get_cur_mem_use():
 def test_check_swapping():
     memtop.check_swapping(True, True)
     memtop.check_swapping(True, False)
-    # memtop.check_swapping(False, True)
-    # memtop.check_swapping(False, False)
 
 
 def test_check_py_version():

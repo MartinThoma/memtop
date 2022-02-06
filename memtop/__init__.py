@@ -18,6 +18,7 @@ from shutil import move
 from string import printable
 from subprocess import PIPE, Popen
 from time import localtime, sleep, strftime, time
+from typing import Dict, Tuple
 
 # Third party modules
 from pkg_resources import DistributionNotFound, get_distribution
@@ -47,7 +48,7 @@ _rows = 10  # number of programs to list
 _period = 15  # default period
 _format = "graph"
 _log = False
-pid_omem = {}  # dictionary PID:mem
+pid_omem: Dict[str, float] = {}  # dictionary PID:mem
 _firstiteration = True
 _curtime = 0
 _oldtime = 0
@@ -114,27 +115,27 @@ def graph_format(new_mem, old_mem, is_firstiteration=True):
     return output
 
 
-def get_cur_mem_use():
+def get_cur_mem_use() -> Tuple[float, str, str]:
     """return utilization of memory"""
     # http://lwn.net/Articles/28345/
-
-    lines = open("/proc/meminfo").readlines()
-    emptySpace = re.compile("[ ]+")
-    for line in lines:
-        if "MemTotal" in line:
-            memtotal = float(emptySpace.split(line)[1])
-        if "SwapFree" in line:
-            swapfree = float(emptySpace.split(line)[1])
-        if "SwapTotal" in line:
-            swaptotal = float(emptySpace.split(line)[1])
-        if "MemFree" in line:
-            memfree = float(emptySpace.split(line)[1])
-        if "Cached" in line and not "SwapCached" in line:
-            cached = float(emptySpace.split(line)[1])
+    with open("/proc/meminfo") as fp:
+        lines = fp.readlines()
+        emptySpace = re.compile("[ ]+")
+        for line in lines:
+            if "MemTotal" in line:
+                memtotal = float(emptySpace.split(line)[1])
+            if "SwapFree" in line:
+                swapfree = float(emptySpace.split(line)[1])
+            if "SwapTotal" in line:
+                swaptotal = float(emptySpace.split(line)[1])
+            if "MemFree" in line:
+                memfree = float(emptySpace.split(line)[1])
+            if "Cached" in line and "SwapCached" not in line:
+                cached = float(emptySpace.split(line)[1])
 
     ramoccup = 1.0 - (memfree + cached) / memtotal
     if swaptotal == 0:
-        swapoccup = 0
+        swapoccup: float = 0
     else:
         swapoccup = 1.0 - swapfree / swaptotal
     strramoccup = str(round(ramoccup * 100.0, 1))
@@ -145,16 +146,17 @@ def get_cur_mem_use():
 
 def get_private_mem(pid):
     sum_private_mem = 0
-    for line in open("/proc/" + str(pid) + "/maps", "rb").readlines():
-        line = line.decode("ascii")
-        if not line[21] == "p":
-            continue
-        if not line[19] == "w":
-            continue
+    with open("/proc/" + str(pid) + "/maps", "rb") as fp:
+        for line in fp.readlines():
+            line = line.decode("ascii")
+            if line[21] != "p":
+                continue
+            if line[19] != "w":
+                continue
 
-        start = int(line[:8], 16)
-        end = int(line[9:17], 16)
-        sum_private_mem += end - start
+            start = int(line[:8], 16)
+            end = int(line[9:17], 16)
+            sum_private_mem += end - start
 
     return sum_private_mem
 
@@ -183,18 +185,20 @@ def check_swapping(is_firstiteration=True, verbose=False):
 
     emptySpace = re.compile("[ ]+")
 
-    for line in open("/proc/vmstat").readlines():
-        if "pswpin" in line:
-            pswpin = int(emptySpace.split(line)[1])
-        if "pswpout" in line:
-            pswpout = int(emptySpace.split(line)[1])
-        if "pgpgin" in line:
-            pgpgin = int(emptySpace.split(line)[1])
-        if "pgpgout" in line:
-            pgpgout = int(emptySpace.split(line)[1])
-        _curtime = time()
+    with open("/proc/vmstat") as fp:
+        for line in fp.readlines():
+            if "pswpin" in line:
+                pswpin = int(emptySpace.split(line)[1])
+            if "pswpout" in line:
+                pswpout = int(emptySpace.split(line)[1])
+            if "pgpgin" in line:
+                pgpgin = int(emptySpace.split(line)[1])
+            if "pgpgout" in line:
+                pgpgout = int(emptySpace.split(line)[1])
+            _curtime = time()
 
-    IOwait = int(open("/proc/stat").readlines()[0].split()[5])
+    with open("/proc/stat") as fp:
+        IOwait = int(fp.readlines()[0].split()[5])
     cpucount = int(sysconf(sysconf_names["SC_NPROCESSORS_ONLN"]))
     _jiffy = int(sysconf(sysconf_names["SC_CLK_TCK"]))
 
@@ -235,7 +239,7 @@ def check_py_version():
     try:
         if sys.version_info >= (2, 7):
             return
-    except:
+    except Exception:
         pass
     print(" ")
     print(" ERROR - memtop needs python version at least 2.7")
@@ -253,8 +257,12 @@ def check_py_version():
 
 
 def get_parser():
-    from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-    from argparse import ArgumentTypeError
+    # Core Library modules
+    from argparse import (
+        ArgumentDefaultsHelpFormatter,
+        ArgumentParser,
+        ArgumentTypeError,
+    )
 
     parser = ArgumentParser(
         description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter
@@ -280,9 +288,7 @@ def get_parser():
         dest="show",
         default="graph",
         choices=["graph", "numb"],
-        help=(
-            "it selects the way how data mainly for " "previous period are presented."
-        ),
+        help=("it selects the way how data mainly for previous period are presented."),
     )
     parser.add_argument(
         "-l",
@@ -298,7 +304,7 @@ def get_parser():
         dest="verbose",
         action="store_true",
         default=False,
-        help=("additional info about memory utilization and " "swaping/paging"),
+        help=("additional info about memory utilization and swaping/paging"),
     )
     parser.add_argument(
         "-L",
@@ -337,7 +343,7 @@ def main():
     if user == "failed":
         try:
             user = getenv("USER").decode()
-        except:
+        except Exception:
             pass
     if user == "failed":
         print(" ! Failed to find out the current user")
@@ -347,13 +353,12 @@ def main():
         try:  # the destination might not be writeable
             if path.isfile(_logfile):
                 move(_logfile, _logfile + ".old")
-            lfile = open(_logfile, "a")
-            lfile.write(
-                "##Date     time   wrtble ram   swap     pgin   "
-                "pgout   IOw TopApp:PID wrtbl(KB) command\n"
-            )
-            lfile.close()
-        except:
+            with open(_logfile, "a") as lfile:
+                lfile.write(
+                    "##Date     time   wrtble ram   swap     pgin   "
+                    "pgout   IOw TopApp:PID wrtbl(KB) command\n"
+                )
+        except Exception:
             print(
                 " \033[0m \033[95m ERROR: Failed to prepare/create the "
                 "log file in current directory!\033[0m"
@@ -361,27 +366,25 @@ def main():
             _log = False
 
     while True:
-        memD = {}  # key(~memory):real memory
         keys = ()  # list of keys (to be listed by size)
         key_pid = {}  # key(~memory):PID
         pid_mem = {}  # dictionary of PID to cur memory, redefining to empty it
         # this is ugly workaround to make sure there are no same numbers
         margin = 0.0001
         totalMemByPmap = 0
-        oldMemDtmp = {}  # dictionary of mem. in previous iteration PID:mem
         processes = 0  # count of identified processes
 
         # first we will identify number of processes
         for directory in listdir("/proc"):
             try:  # elimination non-numerical dirs
                 int(directory)  # directory = PID
-            except:
+            except Exception:
                 continue
 
             # calculating private memory in /proc/$PID/maps file
             try:
                 realMem = get_private_mem(directory)
-            except:  # process probably doesnt exist anymore
+            except Exception:  # process probably doesnt exist anymore
                 continue
 
             totalMemByPmap = totalMemByPmap + int(realMem)
@@ -398,23 +401,20 @@ def main():
         keys = key_pid.keys()
         keys = sorted(keys, reverse=True)
         processes = len(keys)
-        # print (key_pid)
 
-        ##############  printing ##################
+        #  printing ###########################################################
 
         # finding terminal lenght (doing it every iteration)
         try:
             width = int(get_command_output("stty size | awk '{print $2}'"))
-        except:
+        except Exception:
             width = 80
         if width < 46:
             print(
                 "\033[0m"
-                + "\033[95;1m"
-                + " ! Terminal width "
-                + str(width)
-                + " not sufficient, 46 is minimum...."
-                + "\033[0m"
+                "\033[95;1m"
+                f" ! Terminal width {width} not sufficient, 46 is minimum...."
+                "\033[0m"
             )
             width = 46
 
@@ -460,26 +460,22 @@ def main():
 
         # printing body (lines with processes)
         printedlines = 0  # just count printed lines
-        # print ("processes:" +processes)
         for item in keys[0:processes]:
 
-            # print ("Doing: "+item)
             # gettind command and shortening if needed
             try:
                 pid = key_pid[item]
                 cmdfile = str("/proc/" + str(pid) + "/cmdline")
-                f = open(cmdfile)
-                command = open(cmdfile).read().replace("\0", " ")[: col4 + col5]
-                f.close()
-            except:
+                with open(cmdfile) as f:
+                    command = f.read().replace("\0", " ")[: col4 + col5]
+            except Exception:
                 continue
 
-            # print (command)
             # getting formatted value of current memory usage
             curMem = pid_mem[pid]
             try:
-                oldMem = pid_omem[pid]
-            except:
+                oldMem = globals()["pid_omem"][pid]
+            except Exception:
                 oldMem = 0
 
             curMemStr = format_mem_numb(curMem)
@@ -514,7 +510,7 @@ def main():
         curMemUsage = round(totalMemByPmapKB * 100 / float(totalMem), 1)
 
         if _format == "numb":
-            formatting_string = "{:>18s}{:>4.1f}{:s}{:5.1f}{:<1s}"
+            formatting_string = "{:>18s}{:>4.1f}{:s}{:5.1f}{:<1s}"  # noqa
             print(
                 formatting_string.format(
                     "Writeable/RAM: ",
@@ -531,7 +527,7 @@ def main():
                 secondLen = int(round((curMemUsage - 100) * onePrc))
             else:
                 secondLen = 0
-            # print curMemUsage, onePrc, firstLen , secondLen
+            # prints curMemUsage, onePrc, firstLen , secondLen
             bar = str("=" * firstLen + str("#" * secondLen))
             print(
                 "{:>18s}{:s}{:>6.1f}{:s}".format(
@@ -566,7 +562,7 @@ def main():
             )
 
         oldMemUsage = curMemUsage
-        pid_omem = pid_mem.copy()
+        globals()["pid_omem"] = pid_mem.copy()
         print("")
 
         _firstiteration = False
@@ -576,16 +572,15 @@ def main():
 
         # writing logfile
         if _log:
-            lfile = open(_logfile, "a")
-            outline_time = strftime("%d/%m/%Y") + " " + strftime("%H:%M") + " "
-            outline_ram = " {:>5s} {:>5s} {:>5s}".format(
-                str(curMemUsage), str(ramuse), str(swapuse)
-            )
-            outline_pg = " {:>8.2f}{:>8.2f}{:>6.1f}".format(
-                _pageinsec, _pageoutsec, _IOwaitprc
-            )
-            lfile.write(outline_time + outline_ram + outline_pg + outline_comm + "\n")
-            lfile.close()
+            with open(_logfile, "a") as lfile:
+                outline_time = strftime("%d/%m/%Y") + " " + strftime("%H:%M") + " "
+                outline_ram = (
+                    f" {str(curMemUsage):>5s} {str(ramuse):>5s} {str(swapuse):>5s}"
+                )
+                outline_pg = f" {_pageinsec:>8.2f}{_pageoutsec:>8.2f}{_IOwaitprc:>6.1f}"
+                lfile.write(
+                    outline_time + outline_ram + outline_pg + outline_comm + "\n"
+                )
 
         sleep(_period * 60 - 2)
 

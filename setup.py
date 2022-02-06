@@ -2,5 +2,6 @@
 from setuptools import setup
 
 setup(
-    scripts=["bin/memtop"], install_requires=["argparse"],
+    scripts=["bin/memtop"],
+    install_requires=["argparse"],
 )
