@@ -253,8 +253,12 @@ def check_py_version():
 
 
 def get_parser():
-    from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-    from argparse import ArgumentTypeError
+    # Core Library modules
+    from argparse import (
+        ArgumentDefaultsHelpFormatter,
+        ArgumentParser,
+        ArgumentTypeError,
+    )
 
     parser = ArgumentParser(
         description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter
