@@ -18,6 +18,7 @@ from shutil import move
 from string import printable
 from subprocess import PIPE, Popen
 from time import localtime, sleep, strftime, time
+from typing import Dict
 
 # Third party modules
 from pkg_resources import DistributionNotFound, get_distribution
@@ -47,7 +48,10 @@ _rows = 10  # number of programs to list
 _period = 15  # default period
 _format = "graph"
 _log = False
-pid_omem = {}  # dictionary PID:mem
+
+# dictionary PID:mem
+pid_omem: Dict[str, float] = {}
+
 _firstiteration = True
 _curtime = 0
 _oldtime = 0
