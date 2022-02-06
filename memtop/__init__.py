@@ -474,7 +474,7 @@ def main():
             # getting formatted value of current memory usage
             curMem = pid_mem[pid]
             try:
-                oldMem = pid_omem[pid]
+                oldMem = globals()["pid_omem"][pid]
             except Exception:
                 oldMem = 0
 
