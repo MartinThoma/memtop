@@ -47,13 +47,13 @@ packaging==21.3
 pep517==0.12.0
     # via pip-tools
 pip-tools==6.5.0
-    # via -r requirements/dev.in
+    # via -r dev.in
 pkginfo==1.8.2
     # via twine
 platformdirs==2.4.1
     # via virtualenv
 pre-commit==2.17.0
-    # via -r requirements/dev.in
+    # via -r dev.in
 pycparser==2.21
     # via cffi
 pygments==2.11.2
@@ -85,7 +85,7 @@ tomli==2.0.0
 tqdm==4.62.3
     # via twine
 twine==3.8.0
-    # via -r requirements/dev.in
+    # via -r dev.in
 urllib3==1.26.8
     # via
     #   requests
@@ -94,9 +94,9 @@ virtualenv==20.13.1
     # via pre-commit
 webencodings==0.5.1
     # via bleach
-wheel==0.37.1
+wheel==0.38.1
     # via
-    #   -r requirements/dev.in
+    #   -r dev.in
     #   pip-tools
 zipp==3.7.0
     # via importlib-metadata
